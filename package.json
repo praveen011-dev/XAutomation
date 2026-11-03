@@ -1,0 +1,26 @@
+{
+  "name": "xpost",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Draft, review, and post a daily tweet from your coding activity, with optional AI image.",
+  "type": "module",
+  "bin": {
+    "xpost": "src/cli.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "dry": "node src/cli.js --dry-run",
+    "scoop": "node src/cli.js scoop",
+    "doctor": "node src/cli.js doctor",
+    "whoami": "node src/cli.js whoami",
+    "history": "node src/cli.js history",
+    "test": "node --test",
+    "ui": "node src/cli.js ui"
+  },
+  "dependencies": {
+    "twitter-api-v2": "^1.29.1"
+  }
+}

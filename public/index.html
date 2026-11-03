@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>xpost — research, draft, publish</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="aurora" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M4 4l16 16M20 4L4 20" />
+          </svg>
+        </span>
+        <div class="brand-text">
+          <strong>xpost</strong>
+          <small>research · write · publish</small>
+        </div>
+      </div>
+
+      <div class="status-row">
+        <span class="pill" id="accountPill">
+          <span class="dot"></span><span data-bind="account">connecting…</span>
+        </span>
+        <span class="pill" id="modelPill"><span data-bind="model">model</span></span>
+        <button class="ghost" id="logoutBtn" type="button" hidden>Sign out</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow">YOUR WRITING DESK</p>
+        <h1>Find a signal.<br /><span class="gradient-text">Make it yours.</span></h1>
+        <p class="lede">
+          Research a topic, turn useful context into an original draft, then publish with the X API
+          or open X’s composer to review and post yourself.
+        </p>
+
+        <form id="scoopForm" class="launcher">
+          <label class="sr-only" for="topic">Topic</label>
+          <div class="launcher-field">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" stroke-linecap="round" />
+            </svg>
+            <input
+              id="topic"
+              name="topic"
+              type="text"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="freelancing, web development, AI agents…"
+            />
+            <select id="source" title="Where posts come from">
+              <option value="nitter">Public mirror feeds</option>
+              <option value="api">Official X API</option>
+            </select>
+            <select id="limit" title="How many posts to collect">
+              <option value="8">8 posts</option>
+              <option value="12" selected>12 posts</option>
+              <option value="20">20 posts</option>
+              <option value="30">30 posts</option>
+            </select>
+          </div>
+          <button class="primary launch-btn" id="scoopBtn" type="submit">
+            <span class="label">Find context</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+        </form>
+
+        <p class="research-note">Public mirror feeds can be incomplete. Official X search may incur API charges; skip research and draft from the topic alone when you prefer.</p>
+
+        <div class="suggestions" id="suggestions">
+          <span>Try</span>
+          <button type="button" data-topic="freelancing">freelancing</button>
+          <button type="button" data-topic="web development">web development</button>
+          <button type="button" data-topic="ai agents">ai agents</button>
+          <button type="button" data-topic="indie hacking">indie hacking</button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel feed-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Research context</h2>
+              <p class="panel-sub" id="feedMeta">Nothing scraped yet — enter a topic above.</p>
+            </div>
+            <button class="ghost small" id="selectAllBtn" type="button" disabled>Select all</button>
+          </div>
+          <div class="post-list" id="postList">
+            <div class="empty" id="feedEmpty">
+              <div class="empty-glyph" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M4 6h16M4 12h10M4 18h13" stroke-linecap="round" />
+                </svg>
+              </div>
+              <p>Your research feed will appear here.</p>
+              <small>Each card links straight to the original post on X.</small>
+            </div>
+          </div>
+        </div>
+
+        <aside class="panel compose-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Composer</h2>
+              <p class="panel-sub" id="composeMeta">Selected posts become context, never copy.</p>
+            </div>
+            <div class="ring" id="charRing" aria-hidden="true">
+              <svg viewBox="0 0 36 36">
+                <circle class="ring-track" cx="18" cy="18" r="15.5" />
+                <circle class="ring-value" id="ringValue" cx="18" cy="18" r="15.5" />
+              </svg>
+              <span id="charCount">0</span>
+            </div>
+          </div>
+
+          <label class="sr-only" for="draftText">Draft</label>
+          <textarea
+            id="draftText"
+            class="draft-area"
+            placeholder="Write here, or press “Draft with AI” to turn the selected posts into an original post."
+            spellcheck="true"
+          ></textarea>
+
+          <div class="compose-actions">
+            <button class="secondary" id="generateBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+                <path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" />
+              </svg>
+              Draft with AI
+            </button>
+            <button class="secondary" id="saveBtn" type="button">Save</button>
+            <button class="primary" id="postBtn" type="button">
+              <span class="label">Publish</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round">
+                <path d="M4 12l16-8-5.5 16L12 13z" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="mode-switch" role="radiogroup" aria-label="Publishing route">
+            <label class="mode" title="Publish directly through the official X API">
+              <input type="radio" name="mode" value="auto" checked />
+              <span>
+                <strong>Auto</strong>
+                <small>uses API credits</small>
+              </span>
+            </label>
+            <label class="mode" title="Open X’s supported composer link; you review and press Post">
+              <input type="radio" name="mode" value="composer" />
+              <span>
+                <strong>Composer</strong>
+                <small>manual review</small>
+              </span>
+            </label>
+          </div>
+
+          <p class="hint" id="modeHint">
+            API posts require available X API credits. Composer mode prepares a post for you to review and submit.
+          </p>
+          <a class="composer-link" id="composerLink" target="_blank" rel="noopener noreferrer" hidden>Open X composer in a new tab <span aria-hidden="true">↗</span></a>
+        </aside>
+      </section>
+
+      <section class="panel history-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Recent drafts</h2>
+            <p class="panel-sub">Saved drafts and posting history.</p>
+          </div>
+          <button class="ghost small" id="refreshHistory" type="button">Refresh</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <p class="muted">Loading…</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>xpost · local by default · hosted dashboards require sign-in</span>
+      <span class="footer-links">
+        <a href="https://status.d420.de/" target="_blank" rel="noreferrer">feed status</a>
+        <a href="https://docs.x.com/x-for-websites/web-intents/overview" target="_blank" rel="noreferrer">intents docs</a>
+      </span>
+    </footer>
+
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+
+    <section class="auth-screen" id="authScreen" hidden role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <form class="auth-card" id="authForm">
+        <span class="eyebrow">PRIVATE WORKSPACE</span>
+        <h2 id="authTitle">Welcome back.</h2>
+        <p>Enter your dashboard password to continue.</p>
+        <label for="authPassword">Dashboard password</label>
+        <input id="authPassword" name="password" type="password" autocomplete="current-password" required />
+        <p class="auth-error" id="authError" role="alert"></p>
+        <button class="primary" type="submit"><span class="label">Sign in</span></button>
+      </form>
+    </section>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
