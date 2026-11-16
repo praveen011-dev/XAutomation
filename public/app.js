@@ -225,7 +225,7 @@ async function toggleHourlyReminders() {
   localStorage.setItem(REMINDERS_ENABLED_KEY, "1");
   localStorage.setItem(REMINDERS_NEXT_KEY, String(Date.now() + HOUR_MS));
   armHourlyReminder();
-  toast({ type: "success", title: "Hourly reminders enabled", message: "Your first generated draft will be ready in about one hour." });
+  toast({ type: "success", title: "Hourly reminders enabled", message: "Your first draft will be ready in about an hour. X login is only needed when you publish." });
 }
 
 function initializeHourlyReminders() {

@@ -8,9 +8,10 @@ This guide deploys the current xpost dashboard to Vercel and enables an hourly b
 - Stores reminder settings and draft history in that browser’s local storage.
 - Shows a browser notification after the dashboard has been open for about an hour.
 - Opens a prepared X composer when you choose **Composer**. You submit the post yourself.
+- Does not require an X login to generate a draft or receive its notification. You need to sign in to X only when you choose to publish from the composer. The dashboard itself still requires its separate `XPOST_UI_PASSWORD` sign-in.
 - Does not run a server-side hourly schedule. The Vercel Hobby plan’s Cron schedule is not hourly, and this implementation does not use Cron.
 
-Keep the dashboard open in a browser. If you close the tab, quit the browser, or the computer sleeps, the timer pauses; it may run late when the browser becomes active again. Notifications are tied to the browser and domain where you enabled them. Clearing site data removes the local draft history and reminder preference.
+Keep the dashboard open and signed in to the dashboard in a browser. X login does not affect draft generation or notification delivery. If you close the tab, quit the browser, or the computer sleeps, the timer pauses; it may run late when the browser becomes active again. Notifications are tied to the browser and domain where you enabled them. Clearing site data removes the local draft history and reminder preference.
 
 ## 1. Connect your existing Vercel project
 
