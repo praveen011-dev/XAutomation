@@ -20,6 +20,8 @@ Direct posting can still fail with HTTP 402 when the X API account has no availa
 
 Use [DEPLOY.md](DEPLOY.md) for the Render Blueprint, dashboard password, secret variables, HTTPS and storage limits. Do not put secrets in source files or commit `.env`.
 
+For Vercel hosting with hourly browser notifications, use [VERCEL_SETUP.md](VERCEL_SETUP.md). It covers the Vercel function adapter, environment variables, notification permission, review workflow, and the requirement to keep the browser dashboard open.
+
 ## Common issues
 
 | Symptom | What to check |

@@ -87,6 +87,15 @@
         </div>
       </section>
 
+      <section class="panel reminder-panel" aria-labelledby="reminderTitle">
+        <div>
+          <p class="eyebrow">HOURLY REVIEW LOOP</p>
+          <h2 id="reminderTitle">Get a draft reminder every hour</h2>
+          <p class="panel-sub" id="reminderStatus">Keep this dashboard open. Each reminder generates an original draft for you to review; it never posts automatically.</p>
+        </div>
+        <button class="secondary" id="remindersBtn" type="button">Enable hourly reminders</button>
+      </section>
+
       <section class="workspace">
         <div class="panel feed-panel">
           <div class="panel-head">
@@ -151,14 +160,14 @@
 
           <div class="mode-switch" role="radiogroup" aria-label="Publishing route">
             <label class="mode" title="Publish directly through the official X API">
-              <input type="radio" name="mode" value="auto" checked />
+              <input type="radio" name="mode" value="auto" />
               <span>
                 <strong>Auto</strong>
                 <small>uses API credits</small>
               </span>
             </label>
             <label class="mode" title="Open X’s supported composer link; you review and press Post">
-              <input type="radio" name="mode" value="composer" />
+              <input type="radio" name="mode" value="composer" checked />
               <span>
                 <strong>Composer</strong>
                 <small>manual review</small>

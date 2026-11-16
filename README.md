@@ -29,9 +29,9 @@ npm run ui
 
 The dashboard is at `http://127.0.0.1:4321`. To post directly, select **X API** and confirm the publish prompt. To use the manual route, select **X composer**, then review and submit in X.
 
-## Public dashboard on Render
+## Public dashboard
 
-Follow [DEPLOY.md](DEPLOY.md). It configures a public HTTPS dashboard protected by a separate password. The free Render filesystem is temporary; use a paid persistent disk if drafts must survive restarts and redeploys.
+For Render deployment, follow [DEPLOY.md](DEPLOY.md). For a Vercel deployment with hourly browser notifications and manual X review, follow [VERCEL_SETUP.md](VERCEL_SETUP.md). Both public dashboards require a separate password. Vercel keeps draft history in the current browser; Render's free filesystem is temporary.
 
 ## Useful commands
 

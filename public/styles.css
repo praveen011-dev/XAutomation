@@ -1175,6 +1175,31 @@ select:hover {
 .auth-card button { width: 100%; justify-content: center; margin-top: 16px; }
 .auth-card .auth-error { min-height: 1.2em; margin: 8px 0 0; color: var(--red, #ff7b8a); font-size: .82rem; }
 .research-note { max-width: 780px; margin: 12px 0 0; color: var(--muted, #9ba3b8); font-size: .8rem; line-height: 1.6; }
+
+.reminder-panel {
+  width: min(1180px, calc(100% - 48px));
+  margin: 8px auto 28px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.reminder-panel .eyebrow { margin: 0 0 4px; }
+.reminder-panel h2 { margin: 0; font-size: 16px; }
+.reminder-panel .panel-sub { margin: 4px 0 0; }
+.reminder-panel button { flex: 0 0 auto; }
+
+@media (max-width: 640px) {
+  .reminder-panel {
+    width: calc(100% - 32px);
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+  }
+}
 .composer-link[hidden] { display: none; }
 .composer-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; color: #e8e5ff; text-decoration: none; font-size: .88rem; font-weight: 650; padding: 10px 14px; border: 1px solid rgba(167, 139, 250, .38); border-radius: 12px; background: rgba(126, 91, 239, .13); transition: background .18s ease, border-color .18s ease, transform .18s ease; }
 .composer-link:hover { background: rgba(126, 91, 239, .23); border-color: rgba(167, 139, 250, .66); transform: translateY(-1px); }

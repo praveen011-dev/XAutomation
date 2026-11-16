@@ -32,6 +32,8 @@ const els = {
   composerLink: $("#composerLink"),
   history: $("#historyList"),
   refreshHistory: $("#refreshHistory"),
+  remindersBtn: $("#remindersBtn"),
+  reminderStatus: $("#reminderStatus"),
   toasts: $("#toasts"),
 };
 
@@ -44,7 +46,16 @@ const state = {
   draftModel: "",
   busy: false,
   authRequired: false,
+  reminderTimer: null,
+  generatingHourlyDraft: false,
 };
+
+const HOUR_MS = 60 * 60 * 1000;
+const LOCAL_DRAFTS_KEY = "xpost.localDrafts.v1";
+const REMINDERS_ENABLED_KEY = "xpost.hourlyReminders.enabled";
+const REMINDERS_NEXT_KEY = "xpost.hourlyReminders.nextAt";
+const NOTIFIED_DRAFT_KEY = "xpost.hourlyReminders.openDraft";
+const TOPIC_KEY = "xpost.hourlyReminders.topic";
 
 const MODE_COPY = {
   auto: "Publish directly through the official X API. X API credits may be required.",
@@ -90,6 +101,136 @@ function toast({ type = "info", title, message = "", link = "" }) {
   };
   setTimeout(remove, type === "error" ? 12000 : 7000);
   node.addEventListener("click", remove);
+}
+
+function getLocalDrafts() {
+  try {
+    const value = JSON.parse(localStorage.getItem(LOCAL_DRAFTS_KEY) || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalDraft({ text, status = "draft", url = null, id = null, createdAt = new Date().toISOString() }) {
+  const record = { id: id ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`, createdAt, status, text, url };
+  const drafts = [record, ...getLocalDrafts()].slice(0, 50);
+  try { localStorage.setItem(LOCAL_DRAFTS_KEY, JSON.stringify(drafts)); } catch { /* history is best effort */ }
+  return record;
+}
+
+function reminderEnabled() {
+  try { return localStorage.getItem(REMINDERS_ENABLED_KEY) === "1"; } catch { return false; }
+}
+
+function updateReminderControl() {
+  const enabled = reminderEnabled();
+  els.remindersBtn.textContent = enabled ? "Pause hourly reminders" : "Enable hourly reminders";
+  els.remindersBtn.setAttribute("aria-pressed", String(enabled));
+  if (enabled) {
+    const nextAt = Number(localStorage.getItem(REMINDERS_NEXT_KEY));
+    els.reminderStatus.textContent = `On. Next draft reminder: ${Number.isFinite(nextAt) && nextAt ? localTime(new Date(nextAt).toISOString()) : "within an hour"}. Keep this dashboard open.`;
+  } else {
+    els.reminderStatus.textContent = "Off. Enable notifications, then keep this dashboard open to receive an hourly draft for review.";
+  }
+}
+
+function armHourlyReminder() {
+  clearTimeout(state.reminderTimer);
+  if (!reminderEnabled() || !("Notification" in window) || Notification.permission !== "granted") {
+    updateReminderControl();
+    return;
+  }
+  let nextAt = Number(localStorage.getItem(REMINDERS_NEXT_KEY));
+  if (!Number.isFinite(nextAt) || !nextAt) {
+    nextAt = Date.now() + HOUR_MS;
+    localStorage.setItem(REMINDERS_NEXT_KEY, String(nextAt));
+  }
+  updateReminderControl();
+  state.reminderTimer = setTimeout(async () => {
+    await generateHourlyDraft();
+    if (reminderEnabled()) {
+      localStorage.setItem(REMINDERS_NEXT_KEY, String(Date.now() + HOUR_MS));
+      armHourlyReminder();
+    }
+  }, Math.max(0, nextAt - Date.now()));
+}
+
+async function generateHourlyDraft() {
+  if (state.generatingHourlyDraft) return;
+  if (!state.status?.gemini?.ready) {
+    toast({ type: "warn", title: "Hourly draft skipped", message: "Add GEMINI_API_KEY in the Vercel environment and redeploy." });
+    return;
+  }
+  state.generatingHourlyDraft = true;
+  try {
+    const topic = els.topic.value.trim() || "software development, AI tools, and lessons from building projects";
+    const result = await api("/api/draft", { method: "POST", body: { topic } });
+    const record = saveLocalDraft({ text: result.text, status: "draft" });
+    toast({ type: "success", title: "Hourly draft is ready", message: "Open the notification to review it, then choose X composer when you are ready." });
+    if ("Notification" in window && Notification.permission === "granted") {
+      const notification = new Notification("Your X draft is ready to review", {
+        body: `${topic}: ${String(result.text).replace(/\s+/g, " ").slice(0, 120)}`,
+        tag: `xpost-hourly-${record.id}`,
+      });
+      notification.onclick = () => {
+        localStorage.setItem(NOTIFIED_DRAFT_KEY, record.id);
+        window.focus();
+        setTimeout(loadNotifiedDraft, 100);
+        notification.close();
+      };
+    }
+    await loadHistory();
+  } catch (error) {
+    toast({ type: "error", title: "Hourly draft failed", message: error.hint ? `${error.message} — ${error.hint}` : error.message });
+  } finally {
+    state.generatingHourlyDraft = false;
+  }
+}
+
+function loadNotifiedDraft() {
+  let id = null;
+  try {
+    id = localStorage.getItem(NOTIFIED_DRAFT_KEY);
+    localStorage.removeItem(NOTIFIED_DRAFT_KEY);
+  } catch { return; }
+  if (!id) return;
+  const record = getLocalDrafts().find((draft) => draft.id === id);
+  if (!record) return;
+  els.draft.value = record.text ?? "";
+  updateCounter();
+  document.querySelector(".compose-panel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  toast({ type: "info", title: "Draft loaded", message: "Review and edit it before opening X." });
+}
+
+async function toggleHourlyReminders() {
+  if (reminderEnabled()) {
+    clearTimeout(state.reminderTimer);
+    localStorage.setItem(REMINDERS_ENABLED_KEY, "0");
+    updateReminderControl();
+    toast({ type: "info", title: "Hourly reminders paused" });
+    return;
+  }
+  if (!("Notification" in window)) {
+    toast({ type: "error", title: "Notifications are unavailable", message: "Use a modern browser and open the secure HTTPS domain." });
+    return;
+  }
+  const permission = Notification.permission === "default"
+    ? await Notification.requestPermission()
+    : Notification.permission;
+  if (permission !== "granted") {
+    toast({ type: "warn", title: "Notification permission is off", message: "Allow notifications for this site in your browser settings, then try again." });
+    return;
+  }
+  localStorage.setItem(REMINDERS_ENABLED_KEY, "1");
+  localStorage.setItem(REMINDERS_NEXT_KEY, String(Date.now() + HOUR_MS));
+  armHourlyReminder();
+  toast({ type: "success", title: "Hourly reminders enabled", message: "Your first generated draft will be ready in about one hour." });
+}
+
+function initializeHourlyReminders() {
+  updateReminderControl();
+  if (reminderEnabled()) armHourlyReminder();
 }
 
 async function api(path, { method = "GET", body } = {}) {
@@ -201,9 +342,12 @@ function paintStatus(status) {
     els.accountPill.title = status.account.name ?? "";
   } else {
     els.accountPill.className = "pill warn";
-    els.accountText.textContent = "no X account";
+    els.accountText.textContent = status.posting?.manual ? "manual X review" : "no X account";
     els.accountPill.title = status.accountError ?? "X credentials were not verified";
   }
+
+  const apiMode = $$('input[name="mode"]').find((input) => input.value === "auto");
+  if (apiMode) apiMode.closest(".mode").hidden = Boolean(status.posting?.manual);
 
   els.modelText.textContent = status.gemini?.model ?? "gemini";
   els.modelPill.title = status.gemini?.ready ? "Gemini key configured" : "Set GEMINI_API_KEY";
@@ -248,7 +392,9 @@ async function checkSession() {
     return false;
   }
   hideAuth();
+  try { els.topic.value = localStorage.getItem(TOPIC_KEY) ?? ""; } catch { /* optional preference */ }
   await Promise.all([loadStatus(), loadHistory()]);
+  initializeHourlyReminders();
   return true;
 }
 
@@ -265,6 +411,7 @@ async function signIn(event) {
     els.authPassword.value = "";
     hideAuth();
     await Promise.all([loadStatus(), loadHistory()]);
+    initializeHourlyReminders();
     toast({ type: "success", title: "Signed in", message: "Your private dashboard is ready." });
   } catch (error) {
     els.authError.textContent = error.message;
@@ -275,6 +422,7 @@ async function signIn(event) {
 }
 
 async function signOut() {
+  clearTimeout(state.reminderTimer);
   await api("/api/auth/logout", { method: "POST", body: {} });
   showAuth();
   els.authPassword.value = "";
@@ -543,6 +691,7 @@ async function runPublish() {
         message: "The dashboard prepared the composer link. Publishing happens after you press Post in X.",
         link: result.url,
       });
+      saveLocalDraft({ text, status: "manual", url: result.url });
     } else {
       toast({
         type: "success",
@@ -550,6 +699,7 @@ async function runPublish() {
         message: result.file ? `Saved to ${result.file}` : "X confirmed the post.",
         link: result.url,
       });
+      saveLocalDraft({ text, status: "posted", url: result.url });
     }
     loadHistory();
     loadStatus();
@@ -573,6 +723,7 @@ async function runSave() {
   setBusy(els.save, true, "Saving");
   try {
     const result = await api("/api/save", { method: "POST", body: { text } });
+    saveLocalDraft({ text, status: "saved" });
     toast({ type: "success", title: "Draft saved", message: result.file });
     loadHistory();
   } catch (error) {
@@ -584,10 +735,18 @@ async function runSave() {
 
 async function loadHistory() {
   try {
-    const result = await api("/api/history?limit=12");
+    const result = await api("/api/history?limit=12").catch(() => ({ drafts: [] }));
     els.history.replaceChildren();
+    const merged = new Map();
+    for (const draft of [...(result.drafts ?? []), ...getLocalDrafts()]) {
+      const key = draft.id ?? `${draft.createdAt ?? ""}:${draft.text ?? ""}`;
+      if (!merged.has(key)) merged.set(key, draft);
+    }
+    const drafts = [...merged.values()]
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+      .slice(0, 12);
 
-    if (!result.drafts?.length) {
+    if (!drafts.length) {
       const empty = document.createElement("p");
       empty.className = "muted";
       empty.textContent = "No drafts yet. Publish something and it shows up here.";
@@ -595,7 +754,7 @@ async function loadHistory() {
       return;
     }
 
-    for (const draft of result.drafts) {
+    for (const draft of drafts) {
       const row = document.createElement("div");
       row.className = "history-item";
 
@@ -631,12 +790,17 @@ async function loadHistory() {
 /* ---------- wiring ---------- */
 
 els.form.addEventListener("submit", runScoop);
+els.topic.addEventListener("input", () => {
+  try { localStorage.setItem(TOPIC_KEY, els.topic.value); } catch { /* optional preference */ }
+});
 els.generate.addEventListener("click", () => runDraft());
 els.post.addEventListener("click", runPublish);
 els.save.addEventListener("click", runSave);
 els.authForm.addEventListener("submit", signIn);
 els.logout.addEventListener("click", () => signOut().catch((error) => toast({ type: "error", title: "Sign out failed", message: error.message })));
 els.refreshHistory.addEventListener("click", loadHistory);
+els.remindersBtn.addEventListener("click", () => toggleHourlyReminders().catch((error) => toast({ type: "error", title: "Could not update reminders", message: error.message })));
+window.addEventListener("focus", loadNotifiedDraft);
 els.draft.addEventListener("input", updateCounter);
 els.draft.addEventListener("input", () => { els.composerLink.hidden = true; });
 
@@ -644,6 +808,7 @@ els.suggestions.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-topic]");
   if (!button) return;
   els.topic.value = button.dataset.topic;
+  try { localStorage.setItem(TOPIC_KEY, els.topic.value); } catch { /* optional preference */ }
   els.topic.focus();
 });
 
