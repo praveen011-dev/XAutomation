@@ -143,7 +143,7 @@ function makeSession(auth, now = Date.now()) {
 
 function isSecureRequest(request) {
   const forwarded = String(request.headers['x-forwarded-proto'] ?? '').split(',')[0].trim();
-  return forwarded === 'https' || request.socket.encrypted === true;
+  return forwarded === 'https' || request.socket?.encrypted === true;
 }
 
 function setSessionCookie(response, request, token) {
@@ -244,7 +244,10 @@ export function createHandler({
       const body = await readJsonBody(request);
       if (!auth.required) return sendJson(response, 200, { authenticated: true });
 
-      const ip = request.socket.remoteAddress ?? 'unknown';
+      const forwardedFor = String(request.headers['x-forwarded-for'] ?? '')
+        .split(',')[0]
+        .trim();
+      const ip = request.socket?.remoteAddress || forwardedFor || 'unknown';
       const now = Date.now();
       let attempts = loginAttempts.get(ip);
       if (!attempts || now - attempts.startedAt >= LOGIN_WINDOW_MS) {
