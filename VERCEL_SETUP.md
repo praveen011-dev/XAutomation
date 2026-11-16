@@ -1,6 +1,6 @@
 # Hourly X draft reminders on Vercel
 
-This guide deploys the current xpost dashboard to Vercel and enables an hourly browser reminder. Each reminder asks Gemini for a draft and notifies you to review it. You choose whether to edit it, open X’s composer, and press **Post**.
+This guide deploys the current xpost dashboard to Vercel. Click **Start hourly automation** in the app to have it generate a draft each hour and send its own browser notification for your review. You choose whether to edit it, open X’s composer, and press **Post**.
 
 ## What this setup does
 
@@ -49,11 +49,11 @@ The four `X_API_*` / `X_ACCESS_*` variables are not needed for this review-first
 
 1. Open the production Vercel URL and sign in with `XPOST_UI_PASSWORD`.
 2. Enter the topic you want to write about. The current topic is remembered in that browser.
-3. Click **Enable hourly reminders** and allow notifications in the browser prompt.
+3. Click **Start hourly automation** and allow notifications from this app’s domain in the browser prompt.
 4. Keep this page open. In about an hour, the app will generate a draft and show a browser notification.
 5. Click the notification to bring the page forward and load that draft into the editor.
 6. Review and edit it. Keep **Composer** selected, choose **Open composer**, then press **Post** in X if you want to publish.
-7. Click **Pause hourly reminders** whenever you want to stop the timer.
+7. Click **Stop hourly automation** whenever you want to stop the timer.
 
 The hourly generator makes up to 24 Gemini text requests a day if the page stays active all day. Google currently lists Gemini 3.8 Flash text generation in the free tier, but per-project quotas and availability vary and can change. Check the project’s live limits in [AI Studio](https://aistudio.google.com/). If you hit a quota, pause reminders or increase the interval by changing the `HOUR_MS` value in `public/app.js` and redeploying. [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing) · [Gemini rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)
 

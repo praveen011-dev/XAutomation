@@ -125,13 +125,13 @@ function reminderEnabled() {
 
 function updateReminderControl() {
   const enabled = reminderEnabled();
-  els.remindersBtn.textContent = enabled ? "Pause hourly reminders" : "Enable hourly reminders";
+  els.remindersBtn.textContent = enabled ? "Stop hourly automation" : "Start hourly automation";
   els.remindersBtn.setAttribute("aria-pressed", String(enabled));
   if (enabled) {
     const nextAt = Number(localStorage.getItem(REMINDERS_NEXT_KEY));
-    els.reminderStatus.textContent = `On. Next draft reminder: ${Number.isFinite(nextAt) && nextAt ? localTime(new Date(nextAt).toISOString()) : "within an hour"}. Keep this dashboard open.`;
+    els.reminderStatus.textContent = `Running. This app’s next post draft and browser notification are due ${Number.isFinite(nextAt) && nextAt ? localTime(new Date(nextAt).toISOString()) : "within an hour"}. Keep this dashboard open and signed in.`;
   } else {
-    els.reminderStatus.textContent = "Off. Enable notifications, then keep this dashboard open to receive an hourly draft for review.";
+    els.reminderStatus.textContent = "Stopped. Start the automation here to generate hourly drafts and receive notifications from this app. Keep the dashboard open and signed in.";
   }
 }
 
@@ -208,7 +208,7 @@ async function toggleHourlyReminders() {
     clearTimeout(state.reminderTimer);
     localStorage.setItem(REMINDERS_ENABLED_KEY, "0");
     updateReminderControl();
-    toast({ type: "info", title: "Hourly reminders paused" });
+    toast({ type: "info", title: "Hourly automation stopped" });
     return;
   }
   if (!("Notification" in window)) {
@@ -219,13 +219,13 @@ async function toggleHourlyReminders() {
     ? await Notification.requestPermission()
     : Notification.permission;
   if (permission !== "granted") {
-    toast({ type: "warn", title: "Notification permission is off", message: "Allow notifications for this site in your browser settings, then try again." });
+    toast({ type: "warn", title: "App notifications are blocked", message: "Allow browser notifications for this app’s domain, then start the automation again." });
     return;
   }
   localStorage.setItem(REMINDERS_ENABLED_KEY, "1");
   localStorage.setItem(REMINDERS_NEXT_KEY, String(Date.now() + HOUR_MS));
   armHourlyReminder();
-  toast({ type: "success", title: "Hourly reminders enabled", message: "Your first draft will be ready in about an hour. X login is only needed when you publish." });
+  toast({ type: "success", title: "Hourly automation started", message: "This app will prepare your first post draft and notify you in about an hour. X login is only needed when you publish." });
 }
 
 function initializeHourlyReminders() {
